@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reporte de fallos – Agente CMV20J</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EEF3F1;
+    --surface: #FFFFFF;
+    --ink: #10302C;
+    --ink-soft: #4A6560;
+    --line: #CBDAD5;
+    --teal: #1B6B5F;
+    --teal-deep: #124F46;
+    --teal-wash: #DDEEEA;
+    --crit: #B42318;
+    --high: #C4540A;
+    --mid: #9A7300;
+    --low: #4A6B63;
+    --radius: 14px;
+    --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.55 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  header { margin-bottom: 36px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--teal); font-size: 15px; }
+  .brand { gap: 14px; }
+  .brand-logo { width: 56px; height: 56px; border-radius: 50%; display: block; background: #fff; box-shadow: 0 1px 0 var(--line); }
+  .brand-text { display: grid; line-height: 1.25; }
+  .brand-text strong { color: var(--ink); font-size: 16px; }
+  .brand-text span { color: var(--ink-soft); font-weight: 500; font-size: 14px; }
+  h1 {
+    font-family: var(--display); font-weight: 800;
+    font-size: clamp(34px, 6vw, 52px); line-height: 1.02; letter-spacing: -0.02em;
+    margin: 22px 0 14px; max-width: 14ch;
+  }
+  .lede { color: var(--ink-soft); max-width: 58ch; margin: 0; font-size: 17px; }
+
+  form { display: grid; gap: 20px; }
+  fieldset {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--surface); padding: 26px 24px 28px; margin: 0; min-width: 0;
+  }
+  legend { display: contents; }
+  .step-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px; }
+  .step-num {
+    font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1;
+    color: var(--teal); min-width: 26px;
+  }
+  .step-title { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; }
+  .step-sub { color: var(--ink-soft); font-size: 14px; margin: 2px 0 0; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { display: grid; gap: 6px; margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+  label, .label { font-weight: 600; font-size: 15px; }
+  .req { color: var(--crit); font-weight: 700; }
+  .hint { color: var(--ink-soft); font-size: 13.5px; font-weight: 400; }
+
+  input[type=text], input[type=date], select, textarea {
+    width: 100%; font: inherit; color: var(--ink);
+    background: #FAFCFB; border: 1.5px solid var(--line); border-radius: 10px;
+    padding: 11px 13px; transition: border-color .15s, background .15s;
+  }
+  textarea { min-height: 92px; resize: vertical; }
+  select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+    background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 38px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--teal); background: #fff; box-shadow: 0 0 0 3px var(--teal-wash); }
+  .invalid { border-color: var(--crit) !important; }
+
+  /* Chips de área */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip input, .sev input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span {
+    display: inline-block; padding: 8px 14px; border-radius: 999px;
+    border: 1.5px solid var(--line); background: #FAFCFB; font-size: 14.5px; font-weight: 500;
+    cursor: pointer; user-select: none; transition: background .12s, border-color .12s, color .12s;
+  }
+  .chip span:hover { border-color: var(--teal); }
+  .chip input:checked + span { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .chip input:focus-visible + span, .sev input:focus-visible + span { outline: 3px solid var(--teal-wash); outline-offset: 2px; }
+  .chips.invalid-group span { border-color: var(--crit); }
+
+  /* Severidad */
+  .sevs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .sev span {
+    display: grid; gap: 2px; padding: 12px; height: 100%;
+    border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; background: #FAFCFB;
+    border-top: 5px solid var(--c);
+  }
+  .sev strong { font-size: 15px; }
+  .sev small { color: var(--ink-soft); font-size: 12.5px; line-height: 1.35; font-weight: 400; }
+  .sev input:checked + span { background: color-mix(in srgb, var(--c) 10%, #fff); border-color: var(--c); }
+  .sevs.invalid-group .sev span { border-color: var(--crit); }
+
+  /* Evidencias: marcos tipo captura de celular */
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 520px; }
+  .shot {
+    position: relative; aspect-ratio: 9 / 15; border-radius: 26px;
+    border: 2px dashed var(--line); background: #F6FAF8;
+    display: grid; place-items: center; text-align: center; padding: 18px;
+    cursor: pointer; overflow: hidden; transition: border-color .15s, background .15s;
+  }
+  .shot::before {
+    content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 54px; height: 6px; border-radius: 6px; background: var(--line);
+  }
+  .shot:hover, .shot.drag { border-color: var(--teal); background: var(--teal-wash); }
+  .shot:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+  .shot.invalid { border-color: var(--crit); }
+  .shot input { display: none; }
+  .shot-empty { display: grid; gap: 8px; justify-items: center; }
+  .shot-icon {
+    width: 48px; height: 48px; border-radius: 50%; background: var(--surface);
+    border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 22px;
+  }
+  .shot-name { font-family: var(--display); font-weight: 600; font-size: 18px; }
+  .shot-help { font-size: 13px; color: var(--ink-soft); max-width: 22ch; }
+  .shot.filled { border-style: solid; border-color: var(--ink); padding: 0; background: var(--ink); }
+  .shot.filled::before { background: rgba(255,255,255,.35); z-index: 2; }
+  .shot img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .shot-remove {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 2;
+    background: #fff; color: var(--ink); border: 0; border-radius: 999px;
+    padding: 7px 14px; font: 600 13px var(--body); cursor: pointer; box-shadow: 0 2px 8px rgba(16,48,44,.25);
+  }
+  .shots-note { margin: 14px 0 0; font-size: 13.5px; color: var(--ink-soft); }
+
+  .error-box {
+    display: none; background: #FDECEA; border: 1.5px solid var(--crit); color: #7A1810;
+    border-radius: 10px; padding: 12px 14px; font-size: 14.5px;
+  }
+  .error-box.show { display: block; }
+
+  .actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  button.primary {
+    font: 700 16px var(--body); color: #fff; background: var(--teal);
+    border: 0; border-radius: 12px; padding: 15px 26px; cursor: pointer; transition: background .15s;
+  }
+  button.primary:hover { background: var(--teal-deep); }
+  button.primary:focus-visible { outline: 3px solid var(--teal-wash); outline-offset: 2px; }
+  button.primary[disabled] { opacity: .6; cursor: progress; }
+  .actions small { color: var(--ink-soft); }
+
+  /* Confirmación */
+  .done { display: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px 28px; text-align: center; }
+  .done.show { display: block; animation: rise .35s ease-out; }
+  .done-id { font-family: var(--display); font-weight: 800; font-size: 56px; color: var(--teal); margin: 6px 0; letter-spacing: -0.02em; }
+  .done h2 { font-family: var(--display); font-weight: 600; font-size: 24px; margin: 0; }
+  .done p { color: var(--ink-soft); margin: 8px auto 24px; max-width: 44ch; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 620px) {
+    .wrap { padding: 28px 14px 60px; }
+    fieldset { padding: 22px 16px 24px; }
+    .grid-2 { grid-template-columns: 1fr; gap: 0; }
+    .grid-2 .field { margin-bottom: 18px; }
+    .sevs { grid-template-columns: 1fr 1fr; }
+    .shots { gap: 12px; }
+    .shot { border-radius: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><img class="brand-logo" src="/logo.png" alt="Logo de Ambar 360 grados"><div class="brand-text"><strong>Ambar 360 grados</strong><span>Pruebas del agente de WhatsApp para CMV20J</span></div></div>
+    <h1>Reporta un fallo del agente</h1>
+    <p class="lede">Cuando el agente responda algo incorrecto durante una prueba, regístralo aquí con dos capturas de la conversación. Cada reporte queda en la hoja de seguimiento con un número para que el equipo lo corrija.</p>
+  </header>
+
+  <form id="form" novalidate>
+    <fieldset>
+      <legend><div class="step-head"><span class="step-num">1</span><div><p class="step-title">Dónde ocurrió</p><p class="step-sub">Quién probó, cuándo y en qué servicio.</p></div></div></legend>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="tester">Tu nombre <span class="req">*</span></label>
+          <input type="text" id="tester" name="tester" autocomplete="name" placeholder="Ej. Lina Giraldo">
+        </div>
+        <div class="field">
+          <label for="fechaPrueba">Fecha de la prueba <span class="req">*</span></label>
+          <input type="date" id="fechaPrueba" name="fechaPrueba">
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label" id="area-label">Área o servicio <span class="req">*</span></span>
+        <div class="chips" id="areas" role="radiogroup" aria-labelledby="area-label"></div>
+      </div>
+
+      <div class="field">
+        <label for="paso">Paso del flujo donde falló <span class="hint">(opcional)</span></label>
+        <input type="text" id="paso" name="paso" placeholder="Ej. Mensaje 3 – entrega de disponibilidad">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><div class="step-head"><span class="step-num">2</span><div><p class="step-title">Qué pasó</p><p class="step-sub">Entre más concreto, más rápido se corrige.</p></div></div></legend>
+
+      <div class="field">
+        <label for="tipoFallo">Tipo de fallo <span class="req">*</span></label>
+        <select id="tipoFallo" name="tipoFallo">
+          <option value="">Selecciona el tipo de fallo</option>
+          <option>No identifica el servicio solicitado</option>
+          <option>Cambia de servicio o de flujo a mitad de la conversación</option>
+          <option>No reconoce datos que ya se le dieron</option>
+          <option>Repite preguntas o entra en bucle</option>
+          <option>Información incorrecta (precio, horario, requisito)</option>
+          <option>Falta información (horarios, ubicación, mensaje incompleto)</option>
+          <option>Agenda cuando no debe / no agenda cuando debe</option>
+          <option>No muestra la disponibilidad real de Vetlogy</option>
+          <option>No deriva al asesor o no crea el ticket</option>
+          <option>Avanza sin esperar la confirmación del cliente</option>
+          <option>Entrega información que no debe (ej. estado crítico)</option>
+          <option>Menciona nombres del personal interno</option>
+          <option>Mensaje de cierre distinto al estándar</option>
+          <option>Redacción u ortografía</option>
+          <option>Otro</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <span class="label" id="sev-label">Severidad <span class="req">*</span></span>
+        <div class="sevs" id="sevs" role="radiogroup" aria-labelledby="sev-label">
+          <label class="sev"><input type="radio" name="severidad" value="Crítica"><span style="--c: var(--crit)"><strong>Crítica</strong><small>Rompe el flujo o expone información</small></span></label>
+          <label class="sev"><input type="radio" name="severidad" value="Alta"><span style="--c: var(--high)"><strong>Alta</strong><small>Da un dato o paso equivocado</small></span></label>
+          <label class="sev"><input type="radio" name="severidad" value="Media"><span style="--c: var(--mid)"><strong>Media</strong><small>Falta información o sobra un paso</small></span></label>
+          <label class="sev"><input type="radio" name="severidad" value="Baja"><span style="--c: var(--low)"><strong>Baja</strong><small>Redacción, tono o formato</small></span></label>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="mensajeTester">Lo que escribiste <span class="hint">(opcional)</span></label>
+          <textarea id="mensajeTester" name="mensajeTester" placeholder="Ej. Quiero agendar spa para el viernes"></textarea>
+        </div>
+        <div class="field">
+          <label for="respuestaAgente">Lo que respondió el agente <span class="hint">(opcional)</span></label>
+          <textarea id="respuestaAgente" name="respuestaAgente" placeholder="Pega o resume la respuesta"></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="esperado">Lo que debió pasar <span class="req">*</span></label>
+        <textarea id="esperado" name="esperado" placeholder="Ej. Mostrar los horarios libres del viernes según Vetlogy"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="descripcion">Descripción del fallo <span class="req">*</span></label>
+        <textarea id="descripcion" name="descripcion" placeholder="Explica qué salió mal y cómo reproducirlo"></textarea>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><div class="step-head"><span class="step-num">3</span><div><p class="step-title">Evidencia</p><p class="step-sub">Dos capturas de la conversación. Ambas son obligatorias.</p></div></div></legend>
+
+      <div class="shots">
+        <div class="shot" data-slot="0" tabindex="0" role="button" aria-label="Subir foto de evidencia 1">
+          <input type="file" accept="image/*">
+          <div class="shot-empty"><span class="shot-icon" aria-hidden="true">📷</span><span class="shot-name">Foto 1</span><span class="shot-help">Toca para subir, arrastra o pega la captura</span></div>
+        </div>
+        <div class="shot" data-slot="1" tabindex="0" role="button" aria-label="Subir foto de evidencia 2">
+          <input type="file" accept="image/*">
+          <div class="shot-empty"><span class="shot-icon" aria-hidden="true">📷</span><span class="shot-name">Foto 2</span><span class="shot-help">Toca para subir, arrastra o pega la captura</span></div>
+        </div>
+      </div>
+      <p class="shots-note">En computador puedes pegar con Ctrl+V: la captura entra en el primer espacio libre.</p>
+    </fieldset>
+
+    <div class="error-box" id="errorBox" role="alert"></div>
+
+    <div class="actions">
+      <button type="submit" class="primary" id="submitBtn">Enviar reporte</button>
+      <small>Los campos con <span class="req">*</span> son obligatorios.</small>
+    </div>
+  </form>
+
+  <div class="done" id="done" aria-live="polite">
+    <h2>Reporte enviado</h2>
+    <div class="done-id" id="doneId">F-0000</div>
+    <p>Quedó registrado en la hoja de seguimiento con las dos fotos. Usa este número si necesitas referirte al fallo.</p>
+    <button class="primary" id="againBtn" type="button">Reportar otro fallo</button>
+  </div>
+</div>
+
+<script>
+  // URL de la aplicación web de Apps Script (termina en /exec)
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVByEVHVptDZPh7Ik2F4Ms9wYuQjAiD7oylm4SCn7bVSU7KszlBkQ9Ettg6uHdvRnLyA/exec';
+
+  const AREAS = [
+    'Consulta médica general', 'Vacunación', 'Desparasitación', 'Spa y baño', 'Guardería',
+    'Hospitalización', 'Urgencias', 'Domicilios y traslados', 'Farmacia y venta de productos',
+    'Remisiones e interconsultas', 'General (saludo, datos, cierre)'
+  ];
+  const MAX_SIDE = 1600;
+  const images = [null, null];
+
+  const $ = (id) => document.getElementById(id);
+  const form = $('form');
+
+  // Áreas como chips
+  $('areas').innerHTML = AREAS.map(a =>
+    `<label class="chip"><input type="radio" name="area" value="${a}"><span>${a}</span></label>`).join('');
+
+  // Valores por defecto y nombre recordado
+  $('fechaPrueba').value = new Date().toLocaleDateString('en-CA');
+  try { const n = localStorage.getItem('cmv20j_tester'); if (n) $('tester').value = n; } catch (e) {}
+
+  /* ---------- Fotos ---------- */
+  document.querySelectorAll('.shot').forEach(shot => {
+    const slot = Number(shot.dataset.slot);
+    const input = shot.querySelector('input');
+    shot.addEventListener('click', (e) => { if (!e.target.closest('.shot-remove')) input.click(); });
+    shot.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+    input.addEventListener('change', () => { if (input.files[0]) loadImage(input.files[0], slot); input.value = ''; });
+    shot.addEventListener('dragover', (e) => { e.preventDefault(); shot.classList.add('drag'); });
+    shot.addEventListener('dragleave', () => shot.classList.remove('drag'));
+    shot.addEventListener('drop', (e) => {
+      e.preventDefault(); shot.classList.remove('drag');
+      const f = e.dataTransfer.files[0]; if (f) loadImage(f, slot);
+    });
+  });
+
+  document.addEventListener('paste', (e) => {
+    const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+    if (!item) return;
+    const slot = images.findIndex(i => !i);
+    if (slot === -1) return showError('Ya hay dos fotos. Quita una para pegar otra.');
+    e.preventDefault();
+    loadImage(item.getAsFile(), slot);
+  });
+
+  function loadImage(file, slot) {
+    if (!file.type.startsWith('image/')) return showError('Ese archivo no es una imagen. Sube una captura en JPG o PNG.');
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      URL.revokeObjectURL(url);
+      images[slot] = { base64: dataUrl.split(',')[1], mimeType: 'image/jpeg', dataUrl };
+      renderShot(slot);
+      hideError();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); showError('No se pudo leer la imagen. Si es de iPhone (HEIC), envíala como captura de pantalla o en JPG.'); };
+    img.src = url;
+  }
+
+  function renderShot(slot) {
+    const shot = document.querySelector(`.shot[data-slot="${slot}"]`);
+    const data = images[slot];
+    shot.classList.remove('invalid');
+    shot.querySelectorAll('img, .shot-remove').forEach(n => n.remove());
+    const empty = shot.querySelector('.shot-empty');
+    if (data) {
+      shot.classList.add('filled'); empty.hidden = true;
+      const img = document.createElement('img'); img.src = data.dataUrl; img.alt = `Evidencia ${slot + 1}`;
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'shot-remove'; btn.textContent = 'Quitar foto';
+      btn.addEventListener('click', (e) => { e.stopPropagation(); images[slot] = null; renderShot(slot); });
+      shot.append(img, btn);
+    } else {
+      shot.classList.remove('filled'); empty.hidden = false;
+    }
+  }
+
+  /* ---------- Validación y envío ---------- */
+  function showError(msg) { const b = $('errorBox'); b.textContent = msg; b.classList.add('show'); }
+  function hideError() { $('errorBox').classList.remove('show'); }
+
+  function collect() {
+    const fd = new FormData(form);
+    return {
+      tester: (fd.get('tester') || '').trim(),
+      fechaPrueba: fd.get('fechaPrueba') || '',
+      area: fd.get('area') || '',
+      paso: (fd.get('paso') || '').trim(),
+      tipoFallo: fd.get('tipoFallo') || '',
+      severidad: fd.get('severidad') || '',
+      mensajeTester: (fd.get('mensajeTester') || '').trim(),
+      respuestaAgente: (fd.get('respuestaAgente') || '').trim(),
+      esperado: (fd.get('esperado') || '').trim(),
+      descripcion: (fd.get('descripcion') || '').trim()
+    };
+  }
+
+  function validate(d) {
+    const missing = [];
+    document.querySelectorAll('.invalid, .invalid-group').forEach(n => n.classList.remove('invalid', 'invalid-group'));
+    const mark = (id, label) => { $(id).classList.add('invalid'); missing.push(label); };
+    if (!d.tester) mark('tester', 'tu nombre');
+    if (!d.fechaPrueba) mark('fechaPrueba', 'la fecha');
+    if (!d.area) { $('areas').classList.add('invalid-group'); missing.push('el área'); }
+    if (!d.tipoFallo) mark('tipoFallo', 'el tipo de fallo');
+    if (!d.severidad) { $('sevs').classList.add('invalid-group'); missing.push('la severidad'); }
+    if (!d.esperado) mark('esperado', 'lo que debió pasar');
+    if (!d.descripcion) mark('descripcion', 'la descripción');
+    images.forEach((img, i) => { if (!img) { document.querySelector(`.shot[data-slot="${i}"]`).classList.add('invalid'); missing.push(`la foto ${i + 1}`); } });
+    return missing;
+  }
+
+  form.addEventListener('input', (e) => e.target.classList.remove('invalid'));
+  form.addEventListener('change', (e) => { const g = e.target.closest('.chips, .sevs'); if (g) g.classList.remove('invalid-group'); });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = collect();
+    const missing = validate(data);
+    if (missing.length) {
+      showError('Falta completar: ' + missing.join(', ') + '.');
+      document.querySelector('.invalid, .invalid-group')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    hideError();
+    try { localStorage.setItem('cmv20j_tester', data.tester); } catch (err) {}
+
+    if (!APPS_SCRIPT_URL.startsWith('https://script.google.com/')) {
+      return showError('Falta configurar la URL de Apps Script en index.html (constante APPS_SCRIPT_URL).');
+    }
+    const btn = $('submitBtn');
+    btn.disabled = true; btn.textContent = 'Enviando reporte…';
+    data.imagenes = images.map(i => ({ base64: i.base64, mimeType: i.mimeType }));
+
+    // Sin encabezados personalizados: así el navegador no hace preflight CORS con Apps Script
+    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) })
+      .then(r => r.json())
+      .then(res => {
+        if (!res.ok) throw new Error(res.error || 'Error desconocido.');
+        form.hidden = true;
+        $('doneId').textContent = res.id;
+        $('done').classList.add('show');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      })
+      .catch(err => {
+        showError('No se guardó el reporte: ' + (err.message || err) + ' Revisa tu conexión e inténtalo de nuevo.');
+      })
+      .finally(() => { btn.disabled = false; btn.textContent = 'Enviar reporte'; });
+  });
+
+  // Nuevo reporte: conserva nombre, fecha y área para agilizar pruebas seguidas
+  $('againBtn').addEventListener('click', () => {
+    const keep = { tester: $('tester').value, fecha: $('fechaPrueba').value, area: collect().area };
+    form.reset();
+    $('tester').value = keep.tester; $('fechaPrueba').value = keep.fecha;
+    if (keep.area) document.querySelector(`input[name="area"][value="${keep.area}"]`).checked = true;
+    images[0] = images[1] = null; renderShot(0); renderShot(1);
+    $('done').classList.remove('show'); form.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+</body>
+</html>
